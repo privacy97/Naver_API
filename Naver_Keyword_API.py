@@ -5,6 +5,15 @@ import pandas as pd
 
 import signaturehelper
 
+Keyword_list = [
+    '빵',
+    '식빵',
+    '단팥빵',
+    '호밀빵'
+]
+
+DataFrame_list = []
+
 
 def get_header(method, uri, api_key, secret_key, customer_id):
     timestamp = str(round(time.time() * 1000))
@@ -22,13 +31,39 @@ CUSTOMER_ID = ''
 
 uri = '/keywordstool'
 method = 'GET'
-r = requests.get(BASE_URL + uri+'?hintKeywords={}&showDetail=1'.format('파이썬'),
-                 headers=get_header(method, uri, API_KEY, SECRET_KEY, CUSTOMER_ID))
 
-df = pd.DataFrame(r.json()['keywordList'])
-print(df.head())
+for Keyword in Keyword_list:
+    query = {
+        'siteId': '',
+        'biztpId': '',
+        'hintKeywords': Keyword,
+        'event': '',
+        'month': 12,
+        'showDetail': 0,
+    }
+
+    r = requests.get(BASE_URL + uri,
+                     params=query,
+                     headers=get_header(
+                         method=method,
+                         uri=uri,
+                         api_key=API_KEY,
+                         secret_key=SECRET_KEY,
+                         customer_id=CUSTOMER_ID
+                     ))
+
+    r_data = r.json()
+    temp = r_data['keywordList'][0]
+
+    temp['키워드'] = temp.pop('relKeyword')
+    temp['월평균_PC'] = temp.pop('monthlyPcQcCnt')
+    temp['월평균_Moblie'] = temp.pop('monthlyMobileQcCnt')
+
+    DataFrame_list.append(r_data['keywordList'][0])
 
 
-# DevTools failed to load SourceMap
+df = pd.DataFrame(DataFrame_list)
+print(df)
 
-# uncaught typeerror cannot read
+file_name = 'Keyword_Query_List.xlsx'
+df.to_excel(file_name, index=False)
